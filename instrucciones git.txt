@@ -1,0 +1,12 @@
+Configuración inicial:
+	git config --global http.proxy proxy.aulas.uma.es:3128
+	git config --global user.name "usuario"
+	git config --global user.email tucorreo@uma.es
+
+Para bajar cambios (hay que hacerlo siempre antes de tocar nada)
+	git pull
+
+Para subir archivos:
+	git add .
+	git commit -m 'Una descripcion del cambio'
+	git push -u origin master
