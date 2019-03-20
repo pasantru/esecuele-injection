@@ -1,5 +1,5 @@
 Configuración inicial:
-	git config --global http.proxy proxy.aulas.uma.es:3128
+	git config --global http.proxy proxy.aulas.uma.es:3128 <-- (solo si lo haces desde la maquina virtual de la uma)
 	git config --global user.name "usuario"
 	git config --global user.email tucorreo@uma.es
 
