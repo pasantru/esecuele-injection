@@ -1,0 +1,30 @@
+SQLPLUS:
+sys as sysdba
+
+show sga
+
+	(shutdown)
+	(shutdown abort)
+shutdown immediate
+
+	(startup)
+startup nomount
+alter database mount; -- para montar la base de datos
+alter database open; -- para poder conectarse
+
+-- SPFILE  c:\Usuarios\alumbnos\oracle_instalacion\database SPFILEORCL.ORA (hacer una copia de seguridad antes de tocar)
+create pfile from spfile; -- crea el initorcl.ora -- hacer una copia
+ 
+modificamos el initorcl.ora --  
+
+shutdown immediate
+
+startup pfile='C:\Users\alumnos\Oracle_instalacion\database\INITORCL.ORA' -- encendemos la base de datos
+con el nuevo fichero initorcl.ora
+
+create spfile from pfile; -- machaca el spfile con la nueva configuración
+
+--reiniciamos:
+shutdown immediate
+startup
+

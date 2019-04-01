@@ -268,4 +268,31 @@ grant delete on mercoracle.employees to prueba_politica;
 grant update on mercoracle.employees to prueba_politica;
 
 -- 14
+connect prueba_politica ;
+select * from mercoracle.employees;
+update mercoracle.employees set user_name='prueba_politica'
+where emp_no=1;
 
+-- 
+
+-- 15
+-- 16
+-- 17
+-- 18
+create or replace function sec_function_salary(employees varchar2, salario_especifico varchar2)
+  Return varchar2
+is
+  user VARCHAR2(100);
+Begin
+  user := SYS_CONTEXT('userenv', 'SESSION_USER');
+  return 'UPPER(USER_NAME) = ''' || user || '''';
+End;
+/
+
+BEGIN
+DBMS_RLS.ADD_POLICY (
+   'MERCORACLE', 'esalario_especifico', 'emp_policy_salary', 'mercoracle', 'sec_function_salary', 'select');
+end;
+/
+-- 19
+-- 20
