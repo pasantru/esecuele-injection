@@ -1,3 +1,5 @@
+
+
 -- como usuario mercoracle
 
 create table cliente_externo
@@ -37,7 +39,9 @@ select table_name, tablespace_name from user_tables where table_name like 'CLIEN
 select index_name, tablespace_name from user_indexes where index_name like 'CLIENTE_%';
 
 
-    select  c.dni, c.nombre, c.apellido1, f.num_factura, t.fecha_pedido, sum(d.cantidad* p.precio_actual) total
+CREATE MATERIALIZED VIEW vista_materializada_cada_factura
+REFRESH Force NEXT SYSDATE + 1 AS
+     select  c.dni, c.nombre, c.apellido1, f.num_factura, t.fecha_pedido, sum(d.cantidad* p.precio_actual) total
      from cliente c join factura f on c.dni = f.CLIENTE join ticket t on f.ID=t.id join detalle d on d.ticket = t.id join producto p on d.producto =p.codigo_barras
      where extract (year from t.fecha_pedido)=2019
      group by c.dni, c.nombre, c.apellido1, f.num_factura, t.fecha_pedido;
