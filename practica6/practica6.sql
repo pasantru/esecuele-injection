@@ -1,0 +1,17 @@
+create or replace package PK_ANALISIS as
+    type t_valores_producto is record(
+        maximo number,
+        minimo number,
+        media number
+    );
+    type t_valores_fluctuacion is record(
+        producto number,
+        maximo number,
+        minimo number
+    );
+    
+    function F_Calcular_Estadisticas(p_producto number, desde date, hasta date) return t_valores_producto;
+    function F_Calcular_Fluctuacion(p_producto number, desde date, hasta date) return t_valores_fluctuacion;
+    procedure p_reasignar_metros(desde date);
+
+end pk_analisis;

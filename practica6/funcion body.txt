@@ -1,0 +1,41 @@
+CREATE OR REPLACE
+PACKAGE BODY PK_ANALISIS AS
+
+  function F_Calcular_Estadisticas(p_producto number, desde date, hasta date) return t_valores_producto
+   is
+            error_en_fechas exception;
+            resultado t_valores_producto;
+        begin
+            if desde>hasta then
+                raise error_en_fechas;
+            else
+                select max(precio),min(precio),avg(precio) into resultado from historico_precio where p_producto=producto and fecha between desde and hasta;
+                return resultado;
+            end if;
+            
+        end F_Calcular_Estadisticas;
+
+  function F_Calcular_Fluctuacion(p_producto number, desde date, hasta date) return t_valores_fluctuacion AS
+  BEGIN
+    -- TAREA: Se necesita implantación para function PK_ANALISIS.F_Calcular_Fluctuacion
+    RETURN NULL;
+  END F_Calcular_Fluctuacion;
+
+  procedure p_reasignar_metros(desde date) AS
+  BEGIN
+    -- TAREA: Se necesita implantación para procedure PK_ANALISIS.p_reasignar_metros
+    NULL;
+  END p_reasignar_metros;
+
+END PK_ANALISIS;
+
+-- fructuacion
+/*
+declare cursor c1 is cursor
+         select (max(precio)-min(precio))/min(precio) fluct
+         from historico_precio
+         where fecha between desde and hasta
+         group by producto
+    open c1;
+    feth(..);
+*/
