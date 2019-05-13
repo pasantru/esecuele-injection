@@ -36,10 +36,17 @@ grant execute on MERCORACLE.p_revisa to r_supervisor;
 /*
 3. NO ESTÁ TERMINADA
 */
-create view v_iva_trimestre as(
-    select sum(iva) from detalle d join ticket t on (d.ticket = t.id) where abs(month_between(sysdate,d.fecha_pedido))<4 
-    group by detalle;
-);
+CREATE OR REPLACE VIEW V_IVA_TRIMESTRE AS
+SELECT TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) "AÑO" ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1 "TRIMESTRE",
+SUM(I.PORCENTAJE) "IVA_TOTAL" FROM IVA I JOIN 
+CATEGORIA C ON (I.TIPO_IVA = C.IVA) JOIN 
+PRODUCTO P ON (P.CATEGORIA = C.ID) JOIN
+DETALLE D ON (D.PRODUCTO = P.CODIGO_BARRAS) JOIN
+TICKET T ON (T.ID = D.TICKET)
+GROUP BY TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1
+ORDER BY "AÑO", "TRIMESTRE";
+
+grant select on  V_IVA_TRIMESTRE to R_Supervisor, R_Director;
 
 /*
 4. MIRAR LA DE FLUCTUACION QUE NO ESTA BIEN
@@ -140,3 +147,24 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
 END PK_ANALISIS;
 /
 
+/* 4.4
+(Nuevo) Crear un TRIGGER que cada vez que se modifique el precio de un producto almacene el precio anterior en HISTORICO_PRECIO, 
+poniendo la fecha a sysdate -1 (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la que es válido el precio
+del producto).
+*/
+CREATE OR REPLACE TRIGGER Control_Empleados
+AFTER INSERT OR DELETE OR UPDATE ON Empleados
+BEGIN
+    IF INSERTING THEN
+        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
+            VALUES (' Empleados ', USER, SYSDATE,'INSERT'); 
+    ELSIF DELETING THEN
+        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
+            VALUES (' Empleados ', USER, SYSDATE,'DELETE'); 
+    ELSE
+        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
+            VALUES (' Empleados ', USER, SYSDATE,'UPDATE '); 
+    END IF;
+
+END Control_Empleados ;
+/
