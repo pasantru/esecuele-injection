@@ -152,19 +152,78 @@ END PK_ANALISIS;
 poniendo la fecha a sysdate -1 (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la que es válido el precio
 del producto).
 */
-CREATE OR REPLACE TRIGGER Control_Empleados
-AFTER INSERT OR DELETE OR UPDATE ON Empleados
+create or replace TRIGGER HISTORICO_PRECIO_TRIGGER 
+after UPDATE OF PRECIO_ACTUAL ON PRODUCTO 
+for each row
 BEGIN
-    IF INSERTING THEN
-        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
-            VALUES (' Empleados ', USER, SYSDATE,'INSERT'); 
-    ELSIF DELETING THEN
-        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
-            VALUES (' Empleados ', USER, SYSDATE,'DELETE'); 
-    ELSE
-        INSERT INTO Ctrl_Empleados ( Tabla,Usuario,Fecha,Oper )
-            VALUES (' Empleados ', USER, SYSDATE,'UPDATE '); 
-    END IF;
-
-END Control_Empleados ;
+    INSERT INTO HISTORICO_PRECIO(PRODUCTO,FECHA,PRECIO) VALUES (:new.codigo_barras, SYSDATE-1,:old.precio_actual); 
+END;
 /
+
+/*
+5
+*/
+
+-- cabecera
+CREATE OR REPLACE 
+PACKAGE PK_PUNTOS AS 
+   -- TOTAL NUMBER;
+    procedure P_Calcular_Puntos(id_ticket number, cliente varchar2);
+    procedure P_Aplicar_Puntos(id_ticket number, cliente varchar2);
+    
+END PK_PUNTOS;
+/
+
+-- cuerpo
+CREATE OR REPLACE
+PACKAGE BODY PK_PUNTOS AS
+
+  procedure P_Calcular_Puntos(id_ticket number, cliente varchar2) AS
+  V_TOTAL NUMBER;
+    BEGIN
+        SELECT SUM(P.PRECIO_ACTUAL * D.CANTIDAD) INTO V_TOTAL FROM TICKET T 
+        JOIN DETALLE D ON D.TICKET = T.ID
+        JOIN PRODUCTO P ON P.CODIGO_BARRAS = D.PRODUCTO
+        WHERE T.ID = ID_TICKET;
+        UPDATE TICKET SET PUNTOS = V_TOTAL WHERE ID = ID_TICKET; -- en puntos ponía total
+        IF CLIENTE IS NOT NULL THEN
+            UPDATE TICKET SET FIDELIZADO = CLIENTE, PUNTOS = TRUNC (V_TOTAL / 10) WHERE ID = ID_TICKET;
+            UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + TRUNC(V_TOTAL / 10) WHERE DNI = CLIENTE;
+        END IF;
+  END P_Calcular_Puntos;
+
+  procedure P_Aplicar_Puntos(id_ticket number, cliente varchar2) AS
+  /*  v_total number;
+    v_puntos_cliente number;
+    v_nuevos_puntos number;
+    v_nuevo_total number;*/
+  BEGIN/*
+    -- TAREA: Se necesita implantación para procedure PK_PUNTOS.P_Aplicar_Puntos
+    select puntos_acumulados into v_puntos_cliente from fidelizado where dni=cliente;
+    select total into v_total from ticket where id_ticket=id;
+    if v_puntos_cliente / 100 <= v_total then
+        v_nuevos_puntos := 0;
+        v_nuevos_total := v_total - trunc(v_puntos_cliente /100);
+    else
+        v_nuevo_total := 0;
+        v_nuevos_puntos := v_puntos_cliente - (v_total*100);
+    */
+    NULL;
+  END P_Aplicar_Puntos;
+
+END PK_PUNTOS;
+/
+
+/*
+6
+*/
+
+create package pk_empleados as
+procedure p_alta_(p_id number, p_dni varchar2, p_nombre varchar2, p_apellido varchar2, p_usuario varchar2, clave varchar2) as
+sentencia varchar2(500);
+begin
+    insert into empleado values(p_id, p_dni, p_nombre, p_apellido, p_usuario, clave);
+    sentencia:= 'create user '||p_usuario||' identify by '|| clave;
+    dbms_output.putline(sentencia);
+    execute immediate sentencia;
+    sentencia:='grant
