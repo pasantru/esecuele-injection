@@ -139,10 +139,10 @@ dos fechas.
         mayor_fluc number;
 
         cursor c_prod is (
---            select p.codigo_barras, (max(h.precio)-min(h.precio))/min(h.precio) "fluctuacion"
---            from producto p join historico_precio h on (p.codigo_barras=h.producto)
---            where h.fecha between  desde and hasta
---            group by producto
+          select p.codigo_barras, (max(h.precio)-min(h.precio))/min(h.precio) "fluctuacion"
+          from producto p join historico_precio h on (p.codigo_barras=h.producto)
+          where h.fecha between  desde and hasta
+          group by producto
 
             select p.codigo_barras, max(h.precio), min(precio)
             from producto p join historico_precio h on (p.codigo_barras=h.producto)
