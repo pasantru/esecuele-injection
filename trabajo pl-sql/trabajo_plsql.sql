@@ -54,17 +54,16 @@ grant execute on MERCORACLE.p_revisa to r_supervisor;
  a los supervisores y directores. Por simplicidad se utilizará el PRECIO_ACTUAL
   del PRODUCTO, no el HISTORICO_PRECIO
 
-NO ESTA TERMINADA
 */
 CREATE OR REPLACE VIEW V_IVA_TRIMESTRE AS
-SELECT TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) "AÑO" ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1 "TRIMESTRE",
+SELECT TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) "ANIO" ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1 "TRIMESTRE",
 SUM(I.PORCENTAJE) "IVA_TOTAL" FROM IVA I JOIN
 CATEGORIA C ON (I.TIPO_IVA = C.IVA) JOIN
 PRODUCTO P ON (P.CATEGORIA = C.ID) JOIN
 DETALLE D ON (D.PRODUCTO = P.CODIGO_BARRAS) JOIN
 TICKET T ON (T.ID = D.TICKET)
 GROUP BY TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1
-ORDER BY "AÑO", "TRIMESTRE";
+ORDER BY "ANIO", "TRIMESTRE";
 
 grant select on  V_IVA_TRIMESTRE to R_Supervisor, R_Director;
 
@@ -180,10 +179,48 @@ dos fechas.
 --        )
 
 
-  procedure p_reasignar_metros(desde date) AS
+  procedure p_reasignar_metros(desde date) as
+    
+    menos_vendido number;
+    mas_vendido number;
+    i number;
+    metros_menos_vendido number;
+--    error_metros_insuficientes exception;
+    
+    CURSOR c_productos IS
+        select p.codigo_barras, p.precio_actual, nvl(sum(d.cantidad),0) cantidad
+        from producto p left outer join detalle d on p.codigo_barras =d.producto left outer join ticket t on d.ticket = t.id 
+        where (t.fecha_pedido between desde and sysdate)
+        group by p.codigo_barras, p.precio_actual order by cantidad, p.precio_actual;
+    
+    fila c_productos%rowtype;
+    
   BEGIN
-    -- TAREA: Se necesita implantacion para procedure PK_ANALISIS.p_reasignar_metros
-    NULL;
+    -- TAREA: Se necesita implantaci�n para procedure PK_ANALISIS.p_reasignar_metros     
+        i:=1;
+        for fila in c_productos loop
+            if i=1 then
+                menos_vendido:=fila.codigo_barras;
+                i:=0;
+            end if;
+            mas_vendido := fila.codigo_barras;
+        end loop;
+        
+        select metros_lineales into metros_menos_vendido from producto where codigo_barras=menos_vendido;
+        if metros_menos_vendido >= 0.5 then
+            update producto
+            set metros_lineales =  metros_lineales - 0.5
+            where codigo_barras = menos_vendido;
+            
+            update producto
+            set metros_lineales =  metros_lineales + 0.5
+            where codigo_barras = mas_vendido;
+            commit;
+        else
+            dbms_output.put_line('ERROR: El producto menos vendido no tiene metros suficientes.');
+--            raise error_metros_insuficientes;
+        end if;
+        
   END p_reasignar_metros;
 
 END PK_ANALISIS;
@@ -236,37 +273,49 @@ END PK_PUNTOS;
 CREATE OR REPLACE
 PACKAGE BODY PK_PUNTOS AS
 
-  procedure P_Calcular_Puntos(id_ticket number, cliente varchar2) AS
+   procedure P_Calcular_Puntos(id_ticket number, cliente varchar2) AS
   V_TOTAL NUMBER;
     BEGIN
-        SELECT SUM(P.PRECIO_ACTUAL * D.CANTIDAD) INTO V_TOTAL FROM TICKET T
+        SELECT SUM(P.PRECIO_ACTUAL * D.CANTIDAD) INTO V_TOTAL FROM TICKET T 
         JOIN DETALLE D ON D.TICKET = T.ID
         JOIN PRODUCTO P ON P.CODIGO_BARRAS = D.PRODUCTO
         WHERE T.ID = ID_TICKET;
-        UPDATE TICKET SET PUNTOS = V_TOTAL WHERE ID = ID_TICKET; -- en puntos pon�a total
+        UPDATE TICKET SET TOTAL = V_TOTAL WHERE ID = ID_TICKET; -- en puntos pon�a total
         IF CLIENTE IS NOT NULL THEN
-            UPDATE TICKET SET FIDELIZADO = CLIENTE, PUNTOS = TRUNC (V_TOTAL / 10) WHERE ID = ID_TICKET;
-            UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + TRUNC(V_TOTAL / 10) WHERE DNI = CLIENTE;
+            UPDATE TICKET SET FIDELIZADO = CLIENTE, PUNTOS = TRUNC (V_TOTAL) WHERE ID = ID_TICKET;
+            UPDATE FIDELIZADO SET PUNTOS_ACUMULADOS = PUNTOS_ACUMULADOS + TRUNC(V_TOTAL) WHERE DNI = CLIENTE;
         END IF;
   END P_Calcular_Puntos;
 
   procedure P_Aplicar_Puntos(id_ticket number, cliente varchar2) AS
-  /*  v_total number;
+    v_total number;
     v_puntos_cliente number;
     v_nuevos_puntos number;
-    v_nuevo_total number;*/
-  BEGIN/*
-    -- TAREA: Se necesita implantaci�n para procedure PK_PUNTOS.P_Aplicar_Puntos
+    v_nuevo_total number;
+  BEGIN
+    -- TAREA: Se necesita implantaci�n para procedure PK_PUNTOS.P_Aplicar_Puntos
+        
     select puntos_acumulados into v_puntos_cliente from fidelizado where dni=cliente;
-    select total into v_total from ticket where id_ticket=id;
+    select total into v_total from ticket where id=id_ticket;
+    
     if v_puntos_cliente / 100 <= v_total then
         v_nuevos_puntos := 0;
-        v_nuevos_total := v_total - trunc(v_puntos_cliente /100);
+        v_nuevo_total := v_total - trunc(v_puntos_cliente /100);
     else
         v_nuevo_total := 0;
         v_nuevos_puntos := v_puntos_cliente - (v_total*100);
-    */
-    NULL;
+    end if;
+       
+       update fidelizado
+            set puntos_acumulados = v_nuevos_puntos
+            where dni = cliente;
+           -- commit;
+        update ticket
+            set total = v_nuevo_total
+            where id_ticket = id;
+        commit;
+    
+
   END P_Aplicar_Puntos;
 
 END PK_PUNTOS;
@@ -285,16 +334,33 @@ de los empleados salvo las de tipo Director.
 1.Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10%)
 al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
 */
-CREATE PACKAGE PK_EMPLEADOS AS
+CREATE OR REPLACE PACKAGE PK_EMPLEADOS AS
     PROCEDURE P_ALTA (P_ID NUMBER, P_DNI VARCHAR2, P_NOMBRE VARCHAR2, P_APELLIDO1 VARCHAR2,
       P_APELLIDO2 VARCHAR2, P_DOMICILIO VARCHAR2, P_CODIGO_POSTAL NUMBER, P_TELEFONO VARCHAR2,
       P_EMAIL VARCHAR2, P_CAT_EMPLEADO NUMBER, P_FECHA_ALTA DATE,
+      P_USUARIO VARCHAR2, CLAVE VARCHAR2);
+    END PK_EMPLEADOS;
+/
+
+CREATE OR REPLACE
+PACKAGE BODY PK_EMPLEADOS AS
+
+  PROCEDURE P_ALTA (P_ID NUMBER, P_DNI VARCHAR2, P_NOMBRE VARCHAR2, P_APELLIDO1 VARCHAR2,
+      P_APELLIDO2 VARCHAR2, P_DOMICILIO VARCHAR2, P_CODIGO_POSTAL NUMBER, P_TELEFONO VARCHAR2,
+      P_EMAIL VARCHAR2, P_CAT_EMPLEADO NUMBER, P_FECHA_ALTA DATE,
       P_USUARIO VARCHAR2, CLAVE VARCHAR2) AS
-    SENTENCIA VARCHAR2(500);
-    BEGIN
+      
+      SENTENCIA VARCHAR2(500);
+  BEGIN
+    -- TAREA: Se necesita implantaci�n para PROCEDURE PK_EMPLEADOS.P_ALTA
     INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
       P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
     SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
     DBMS_OUTPUT.PUT_LINE ('SENTENCIA');
     EXECUTE IMMEDIATE SENTENCIA;
     SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
+    
+  END P_ALTA;
+
+END PK_EMPLEADOS;
+/
