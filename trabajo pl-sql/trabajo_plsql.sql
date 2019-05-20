@@ -1,14 +1,28 @@
 set serveroutput on;
 
 /*
-1.Cada empleado utilizar� un usuario de Oracle distinto para conectarse a la base de datos. Modificar el modelo (si es necesario) para almacenar dicho usuario . Adem�s habr� que crear un role para las categor�as de empleado: Director, Supervisor y Cajero-Reponedor. Los roles se llamar�n R_DIRECTOR, R_SUPERVISOR, R_CAJERO.
+1.Cada empleado utilizara un usuario de Oracle distinto para conectarse a la base de datos.
+Modificar el modelo (si es necesario) para almacenar dicho usuario .
+Ademas habra que crear un role para las categorias de empleado:
+Director, Supervisor y Cajero-Reponedor.
+Los roles se llamaran R_DIRECTOR, R_SUPERVISOR, R_CAJERO.
 */
 create role R_DIRECTOR;
 create role R_SUPERVISOR;
 create role R_CAJERO;
 
 /*
-2.
+2.Crear una tabla denominada REVISION con la fecha, código de barras del producto e id
+ del pasillo. Necesitamos un procedimiento P_REVISA que cuando se ejecute compruebe si
+  los productos con menor temperatura de conservación se encuentren en su
+  localización determinada. De esta forma, insertará en REVISION aquellos
+  productos para los que se conoce su atributo temperatura y NO cumplen que:
+
+    1.Teniendo una temperatura menor de 0ºC no se encuentran en Congelados.
+    2.Teniendo una temperatura entre 0ºC y 6ºC no se encuentran en Refrigerados.
+    3.Crear vista denominada V_REVISION_HOY con los datos de REVISION correspondientes al día de hoy. Otorgar permiso a R_CAJERO para seleccionar de dicha vista.
+    4.Dar permiso de ejecución sobre el procedimiento P_REVISA a R_SUPERVISOR
+
 */
 CREATE TABLE "REVISION"
    (	"FECHA" DATE,
@@ -34,22 +48,47 @@ grant select on MERCORACLE.V_REVISION_HOY to r_cajero;
 grant execute on MERCORACLE.p_revisa to r_supervisor;
 
 /*
-3. NO EST� TERMINADA
+3.Necesitamos una vista denominada V_IVA_TRIMESTRE con los atributos AÑO, TRIMESTRE,
+ IVA_TOTAL siendo trimestre un número de 1 a 4. El IVA_TOTAL es el IVA devengado
+ (suma del IVA de los productos vendidos en ese trimestre). Dar permiso de selección
+ a los supervisores y directores. Por simplicidad se utilizará el PRECIO_ACTUAL
+  del PRODUCTO, no el HISTORICO_PRECIO
+
+NO ESTA TERMINADA
 */
 CREATE OR REPLACE VIEW V_IVA_TRIMESTRE AS
-SELECT TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) "A�O" ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1 "TRIMESTRE",
+SELECT TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) "AÑO" ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1 "TRIMESTRE",
 SUM(I.PORCENTAJE) "IVA_TOTAL" FROM IVA I JOIN
 CATEGORIA C ON (I.TIPO_IVA = C.IVA) JOIN
 PRODUCTO P ON (P.CATEGORIA = C.ID) JOIN
 DETALLE D ON (D.PRODUCTO = P.CODIGO_BARRAS) JOIN
 TICKET T ON (T.ID = D.TICKET)
 GROUP BY TO_NUMBER(TO_CHAR(T.FECHA_PEDIDO, 'YYYY')) ,TRUNC(TO_NUMBER (TO_CHAR (T.FECHA_PEDIDO, 'MM') - 1) / 3) + 1
-ORDER BY "A�O", "TRIMESTRE";
+ORDER BY "AÑO", "TRIMESTRE";
 
 grant select on  V_IVA_TRIMESTRE to R_Supervisor, R_Director;
 
 /*
-4. MIRAR LA DE FLUCTUACION QUE NO ESTA BIEN
+4.Crear un paquete en PL/SQL de análisis de datos.
+  1.La función F_Calcular_Estadisticas devolverá la media, mínimo y máximo precio
+  de un producto determinado entre dos fechas.
+  2.La función F_Calcular_Fluctuacion devolverá el mínimo y el máximo del producto que
+  haya tenido mayor fluctuación porcentualmente en su precio de todos entre dos fechas.
+  3.El procedimiento P_Reasignar_metros encuentra el producto más y menos vendido
+  (en unidades) desde una fecha hasta hoy. Extrae 0.5 metros lineales del de menor
+  ventas y se lo asigna al de mayor ventas si es posible. Si hay varios productos
+  que se han vendido el mismo número de veces se obtendrá el de menor ventas y menos
+  precio y se le asigna al de mayor ventas y mayor precio. La siguiente consulta
+  muestra las ventas por producto y precio: select p.codigo_barras, p.precio_actual,
+  nvl(sum(d.cantidad),0)
+  from producto p left outer join detalle d on p.codigo_barras =d.producto left outer
+  join ticket t on d.ticket = t.id
+  4.(Nuevo) Crear un TRIGGER que cada vez que se modifique el precio de un producto
+  almacene el precio anterior en HISTORICO_PRECIO, poniendo la fecha a sysdate -1
+  (se supone que el atributo PRECIO de HISTORICO_PRECIO indica la fecha hasta la
+  que es válido el precio del producto).
+
+MIRAR 2 LA DE FLUCTUACION QUE NO ESTA BIEN
 */
 -- cabecera
 create or replace package PK_ANALISIS as
@@ -88,7 +127,10 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
             end if;
 
         end F_Calcular_Estadisticas;
-
+/*4.2.La función F_Calcular_Fluctuacion devolverá el mínimo y el máximo del producto
+que haya tenido mayor fluctuación porcentualmente en su precio de todos entre
+dos fechas.
+*/
   function F_Calcular_Fluctuacion(p_producto number, desde date, hasta date) return t_valores_fluctuacion
     is
         error_en_fechas exception;
@@ -140,7 +182,7 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
 
   procedure p_reasignar_metros(desde date) AS
   BEGIN
-    -- TAREA: Se necesita implantaci�n para procedure PK_ANALISIS.p_reasignar_metros
+    -- TAREA: Se necesita implantacion para procedure PK_ANALISIS.p_reasignar_metros
     NULL;
   END p_reasignar_metros;
 
@@ -161,7 +203,23 @@ END;
 /
 
 /*
-5
+5.Modificar la tabla Ticket con el campo Total de tipo number. Crear un paquete en
+PL/SQL de gestión de puntos de clientes fidelizados.
+  1.El procedimiento P_Calcular_Puntos, tomará el ID de un ticket y un número de cliente
+ fidelizado y calculará los puntos correspondientes a la compra (un punto por cada
+ euro, pero usando la función TRUNC en el redondeo). El procedimiento siempre
+ calculará el precio total de toda la compra y lo almacenará en el campo Total.
+ También calcula y almacena el campo PUNTOS de ticket. Además, si el cliente existe
+ (puede ser nulo o no estar en la tabla), actualizará el atributo Puntos_acumulados
+ del cliente fidelizado.
+
+2.El procedimiento P_Aplicar_puntos tomará el ID de un ticket y un número de
+cliente fidelizado. Cada punto_acumulado es un céntimo de descuento. Calcular el
+descuento teniendo en cuenta que no puede ser mayor que el precio total y actualizar
+ el precio total y los puntos acumulados. Por ejemplo, si el precio total es 40 y
+ tiene 90 puntos, el nuevo precio es  40-0,9=39,1 y los puntos pasan a ser cero.
+ Si el precio es 10 y tiene 1500 puntos, el nuevo precio es 0 y le quedan 500 puntos.
+
 */
 
 -- cabecera
@@ -215,7 +273,17 @@ END PK_PUNTOS;
 /
 
 /*
-6
+6.Crear un paquete en PL/SQL de gestión de empleados que incluya las operaciones para
+crear, borrar y modificar los datos de un empleado. Hay que tener en cuenta que
+algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
+si su usuario no es nulo, habrá que crear su usuario con el role que corresponda según
+su categoría de empleado. Además, el paquete ofrecerá procedimientos para
+bloquear/desbloquear cuentas de usuarios de modo individual.
+También se debe disponer de una opción para bloquear y desbloquear todas las cuentas
+de los empleados salvo las de tipo Director.
+
+1.Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10%)
+al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
 */
 CREATE PACKAGE PK_EMPLEADOS AS
     PROCEDURE P_ALTA (P_ID NUMBER, P_DNI VARCHAR2, P_NOMBRE VARCHAR2, P_APELLIDO1 VARCHAR2,
@@ -227,6 +295,6 @@ CREATE PACKAGE PK_EMPLEADOS AS
     INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
       P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
     SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
-    DBMS_OUTPUT.PUT_LINE (SENTENCIA);
+    DBMS_OUTPUT.PUT_LINE ('SENTENCIA');
     EXECUTE IMMEDIATE SENTENCIA;
     SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
