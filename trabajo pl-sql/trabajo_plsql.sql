@@ -104,14 +104,15 @@ create or replace package PK_ANALISIS as
 
     function F_Calcular_Estadisticas(p_producto number, desde date, hasta date) return t_valores_producto;
 
-    function F_Calcular_Fluctuacion(p_producto number, desde date, hasta date) return t_valores_fluctuacion;
+    function F_Calcular_Fluctuacion(desde date, hasta date) return t_valores_fluctuacion;
+    
     procedure p_reasignar_metros(desde date);
 
 end pk_analisis;
 /
 
 -- cuerpo
-CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
+create or replace PACKAGE BODY PK_ANALISIS AS
 
   function F_Calcular_Estadisticas(p_producto number, desde date, hasta date) return t_valores_producto
    is
@@ -130,7 +131,7 @@ CREATE OR REPLACE PACKAGE BODY PK_ANALISIS AS
 que haya tenido mayor fluctuaciÃ³n porcentualmente en su precio de todos entre
 dos fechas.
 */
-  function F_Calcular_Fluctuacion(p_producto number, desde date, hasta date) return t_valores_fluctuacion
+  function F_Calcular_Fluctuacion(desde date, hasta date) return t_valores_fluctuacion
     is
         error_en_fechas exception;
         fila t_valores_fluctuacion;
@@ -139,10 +140,6 @@ dos fechas.
         mayor_fluc number;
 
         cursor c_prod is (
-          select p.codigo_barras, (max(h.precio)-min(h.precio))/min(h.precio) "fluctuacion"
-          from producto p join historico_precio h on (p.codigo_barras=h.producto)
-          where h.fecha between  desde and hasta
-          group by producto
 
             select p.codigo_barras, max(h.precio), min(precio)
             from producto p join historico_precio h on (p.codigo_barras=h.producto)
@@ -157,11 +154,11 @@ dos fechas.
         else
             open c_prod;
             fetch c_prod into fila;
-            fluctuacion := abs(fila.maximo - fila.minimo);
+            fluctuacion := abs(fila.maximo - fila.minimo)/fila.minimo *100;
             mayor_fluc := fluctuacion;
             fetch c_prod into fila;
             while c_prod%found loop
-                fluctuacion := abs(fila.maximo - fila.minimo)/fila.minimo;
+                fluctuacion := abs(fila.maximo - fila.minimo)/fila.minimo *100;
                 if fluctuacion > mayor_fluc then
                     mayor_fluc := fluctuacion;
                     resultado := fila;
@@ -174,27 +171,23 @@ dos fechas.
     end F_Calcular_Fluctuacion;
 
 
---        (
-
---        )
-
 
   procedure p_reasignar_metros(desde date) as
-    
+
     menos_vendido number;
     mas_vendido number;
     i number;
     metros_menos_vendido number;
 --    error_metros_insuficientes exception;
-    
+
     CURSOR c_productos IS
         select p.codigo_barras, p.precio_actual, nvl(sum(d.cantidad),0) cantidad
         from producto p left outer join detalle d on p.codigo_barras =d.producto left outer join ticket t on d.ticket = t.id 
         where (t.fecha_pedido between desde and sysdate)
         group by p.codigo_barras, p.precio_actual order by cantidad, p.precio_actual;
-    
+
     fila c_productos%rowtype;
-    
+
   BEGIN
     -- TAREA: Se necesita implantación para procedure PK_ANALISIS.p_reasignar_metros     
         i:=1;
@@ -205,13 +198,13 @@ dos fechas.
             end if;
             mas_vendido := fila.codigo_barras;
         end loop;
-        
+
         select metros_lineales into metros_menos_vendido from producto where codigo_barras=menos_vendido;
         if metros_menos_vendido >= 0.5 then
             update producto
             set metros_lineales =  metros_lineales - 0.5
             where codigo_barras = menos_vendido;
-            
+
             update producto
             set metros_lineales =  metros_lineales + 0.5
             where codigo_barras = mas_vendido;
@@ -220,11 +213,13 @@ dos fechas.
             dbms_output.put_line('ERROR: El producto menos vendido no tiene metros suficientes.');
 --            raise error_metros_insuficientes;
         end if;
-        
+
   END p_reasignar_metros;
 
 END PK_ANALISIS;
 /
+
+
 
 /* 4.4
 (Nuevo) Crear un TRIGGER que cada vez que se modifique el precio de un producto almacene el precio anterior en HISTORICO_PRECIO,
@@ -238,6 +233,9 @@ BEGIN
     INSERT INTO HISTORICO_PRECIO(PRODUCTO,FECHA,PRECIO) VALUES (:new.codigo_barras, SYSDATE-1,:old.precio_actual);
 END;
 /
+
+
+
 
 /*
 5.Modificar la tabla Ticket con el campo Total de tipo number. Crear un paquete en
