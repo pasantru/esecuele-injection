@@ -319,7 +319,8 @@ PACKAGE BODY PK_PUNTOS AS
 END PK_PUNTOS;
 /
 
-/*
+/* FALTA UN POQUITO!!!!!!
+
 6.Crear un paquete en PL/SQL de gestiÃ³n de empleados que incluya las operaciones para
 crear, borrar y modificar los datos de un empleado. Hay que tener en cuenta que
 algunos empleados tienen un usuario y, por tanto, al insertar o modificar un empleado,
@@ -332,16 +333,17 @@ de los empleados salvo las de tipo Director.
 1.HabrÃ¡ un procedimiento P_EmpleadoDelAÃ±o que aumentarÃ¡ el sueldo bruto en un 10%)
 al empleado mÃ¡s eficiente en caja (que ha emitido un mayor nÃºmero de tickets).
 */
-CREATE OR REPLACE PACKAGE PK_EMPLEADOS AS
+create or replace PACKAGE PK_EMPLEADOS AS
     PROCEDURE P_ALTA (P_ID NUMBER, P_DNI VARCHAR2, P_NOMBRE VARCHAR2, P_APELLIDO1 VARCHAR2,
       P_APELLIDO2 VARCHAR2, P_DOMICILIO VARCHAR2, P_CODIGO_POSTAL NUMBER, P_TELEFONO VARCHAR2,
       P_EMAIL VARCHAR2, P_CAT_EMPLEADO NUMBER, P_FECHA_ALTA DATE,
       P_USUARIO VARCHAR2, CLAVE VARCHAR2);
+      
+      procedure P_EmpleadoDelAno ;
     END PK_EMPLEADOS;
 /
 
-CREATE OR REPLACE
-PACKAGE BODY PK_EMPLEADOS AS
+create or replace PACKAGE BODY PK_EMPLEADOS AS
 
   PROCEDURE P_ALTA (P_ID NUMBER, P_DNI VARCHAR2, P_NOMBRE VARCHAR2, P_APELLIDO1 VARCHAR2,
       P_APELLIDO2 VARCHAR2, P_DOMICILIO VARCHAR2, P_CODIGO_POSTAL NUMBER, P_TELEFONO VARCHAR2,
@@ -359,6 +361,95 @@ PACKAGE BODY PK_EMPLEADOS AS
     SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
     
   END P_ALTA;
+  
+  -- 1.Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10%) al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
+  procedure P_EmpleadoDelAno as
+  id_empleado number;
+  begin
+    select empleado into id_empleado from ticket group by empleado order by count(*) desc fetch first row only;
+        update nomina
+            set IMPORTE_BRUTO = IMPORTE_BRUTO*1.10
+            where empleado = id_empleado;
+        commit;
+    
+  end P_EmpleadoDelAno;
+  
 
 END PK_EMPLEADOS;
 /
+
+/* 7.Escribir un trigger que al introducir un ticket (en realidad, el detalle del ticket) decremente convenientemente el atributo Exposición de dicho producto. Si no fuese posible, debe evitarse la inserción de dicho detalle en el ticket.*/
+create or replace TRIGGER TICKET_TRIGGER
+after insert  ON detalle
+for each row
+BEGIN
+        update producto p
+            set p.exposicion = p.exposicion-:new.cantidad
+            where :new.producto = p.codigo_barras and :new.cantidad<p.exposicion;
+       -- commit; NO SE PONE COMMIT EN UN TRIGGER!!!!
+END TICKET_TRIGGER;
+/
+
+-- 8.Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su información de fidelización y las entregas que tuviera pendientes en su caso.
+
+create or replace TRIGGER CLIENTE_TRIGGER
+after DELETE  ON CLIENTE
+for each row
+
+
+BEGIN
+    delete from fidelizado where dni like :old.dni;
+    delete from entrega where cliente like :old.dni;
+        
+END CLIENTE_TRIGGER;
+/
+
+
+
+
+/*9.Crear un JOB que ejecute el procedimiento P_REVISA todos los días a las 07:00. Crear otro JOB que semanalmente (los sábados a las 22:00) llame a P_Reasignar_metros */
+BEGIN
+DBMS_SCHEDULER.CREATE_JOB (
+job_name => 'JOB_P_REVISA',
+job_type => 'PLSQL_BLOCK',
+job_action => 'BEGIN
+                 P_REVISA(); 
+                    END;',
+start_date => sysdate,
+repeat_interval => 'FREQ=DAILY;BYHOUR=07',
+end_date => null,
+enabled => TRUE,
+comments => 'Ejecuta P_Revisa todos los dias a las 7 de la mañana');
+END;
+/
+-- DBMS_SCHEDULER.ENABLE('JOB_P_REVISA');
+
+
+BEGIN
+DBMS_SCHEDULER.CREATE_JOB (
+job_name => 'JOB_P_REASIGNAR_METROS',
+job_type => 'STORED_PROCEDURE',
+job_action => 
+    'DECLARE
+      DESDE DATE;
+    BEGIN
+      DESDE := NULL;
+    
+      PK_ANALISIS.P_REASIGNAR_METROS(
+        DESDE => DESDE
+      );
+    END;',
+number_of_arguments => 1,
+
+start_date => sysdate,
+repeat_interval => 'FREQ=WEEKLY; BYDAY=FRI; BYHOUR=22',
+end_date => null,
+enabled => false,
+comments => 'Ejecuta P_Revisa todos los dias a las 7 de la mañana');
+END;
+/
+DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE('JOB_P_REASIGNAR_METROS', sysdate-7);
+
+DBMS_SCHEDULER.ENABLE('JOB_P_REASIGNAR_METROS');
+
+
