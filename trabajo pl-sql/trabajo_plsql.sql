@@ -351,15 +351,27 @@ create or replace PACKAGE BODY PK_EMPLEADOS AS
       P_USUARIO VARCHAR2, CLAVE VARCHAR2) AS
       
       SENTENCIA VARCHAR2(500);
+      
+      rol varchar2(100);
   BEGIN
     -- TAREA: Se necesita implantación para PROCEDURE PK_EMPLEADOS.P_ALTA
     INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
       P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
     SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
-    DBMS_OUTPUT.PUT_LINE ('SENTENCIA');
+    DBMS_OUTPUT.PUT_LINE (SENTENCIA);
     EXECUTE IMMEDIATE SENTENCIA;
-    SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
     
+    select nombre_cargo into rol from cat_empleado where id=p_cat_empleado;
+    
+    IF rol = 'Director' THEN
+            SENTENCIA := 'GRANT CONNECT, R_DIRECTOR TO ' || P_USUARIO;
+            EXECUTE IMMEDIATE SENTENCIA;
+    IF ELSE
+
+        
+    
+    SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
+    EXECUTE IMMEDIATE SENTENCIA;
   END P_ALTA;
   
   -- 1.Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10%) al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
@@ -393,13 +405,15 @@ END TICKET_TRIGGER;
 -- 8.Escribir un trigger que cuando se eliminen los datos de un cliente fidelizado se eliminen a su vez toda su información de fidelización y las entregas que tuviera pendientes en su caso.
 
 create or replace TRIGGER CLIENTE_TRIGGER
-after DELETE  ON CLIENTE
+before DELETE  ON CLIENTE
 for each row
-
-
 BEGIN
-    delete from fidelizado where dni like :old.dni;
+
+    update ticket
+    set fidelizado = null
+    where fidelizado = :old.dni;
     delete from entrega where cliente like :old.dni;
+    delete from fidelizado where dni like :old.dni;
         
 END CLIENTE_TRIGGER;
 /
@@ -425,31 +439,39 @@ END;
 -- DBMS_SCHEDULER.ENABLE('JOB_P_REVISA');
 
 
-BEGIN
-DBMS_SCHEDULER.CREATE_JOB (
-job_name => 'JOB_P_REASIGNAR_METROS',
-job_type => 'STORED_PROCEDURE',
-job_action => 
-    'DECLARE
-      DESDE DATE;
-    BEGIN
-      DESDE := NULL;
-    
-      PK_ANALISIS.P_REASIGNAR_METROS(
-        DESDE => DESDE
-      );
-    END;',
-number_of_arguments => 1,
 
-start_date => sysdate,
-repeat_interval => 'FREQ=WEEKLY; BYDAY=FRI; BYHOUR=22',
-end_date => null,
-enabled => false,
-comments => 'Ejecuta P_Revisa todos los dias a las 7 de la mañana');
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"MERCORACLE"."JOB_R_METROS"',
+            job_type => 'STORED_PROCEDURE',
+            job_action => 'MERCORACLE.PK_ANALISIS.P_REASIGNAR_METROS',
+            number_of_arguments => 1,
+            start_date => sysdate,
+            repeat_interval => 'FREQ=WEEKLY;BYTIME=22;BYDAY=SAT',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'Esto reasigna los metros todos los sabados a las 22 horas. P_Reasigna_Metros');
+
+    DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE( 
+             job_name => '"MERCORACLE"."JOB_R_METROS"', 
+             argument_position => 1, 
+             argument_value => sysdate-7);
+         
+     
+ 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"MERCORACLE"."JOB_R_METROS"', 
+             attribute => 'store_output', value => TRUE);
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"MERCORACLE"."JOB_R_METROS"', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+   
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"MERCORACLE"."JOB_R_METROS"');
 END;
 /
-DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE('JOB_P_REASIGNAR_METROS', sysdate-7);
-
-DBMS_SCHEDULER.ENABLE('JOB_P_REASIGNAR_METROS');
-
-
