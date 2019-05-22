@@ -339,6 +339,28 @@ create or replace PACKAGE PK_EMPLEADOS AS
       P_EMAIL VARCHAR2, P_CAT_EMPLEADO NUMBER, P_FECHA_ALTA DATE,
       P_USUARIO VARCHAR2, CLAVE VARCHAR2);
       
+     PROCEDURE P_BAJA (P_DNI VARCHAR2);
+     
+     PROCEDURE P_BLOQ_CUENTA(P_USUARIO VARCHAR2);
+     
+     PROCEDURE P_DESBLOQ_CUENTA(P_USUARIO VARCHAR2);
+     
+     PROCEDURE P_BLOQ_TODAS;
+     
+     PROCEDURE P_DESBLOQ_TODAS;
+     
+     PROCEDURE P_MOD_DOMICILIO(P_DNI VARCHAR2, P_NUEVO_DOMICILIO VARCHAR2, P_NUEVO_CODIGO_POSTAL NUMBER);
+     
+     PROCEDURE P_MOD_CONTACTO(P_DNI VARCHAR2, P_NUEVO_TELEFONO VARCHAR2, P_NUEVO_EMAIL VARCHAR2);
+     
+     PROCEDURE P_MOD_CAT_EMPLEADO(P_DNI VARCHAR2, P_NUEVA_CAT NUMBER);
+     
+     PROCEDURE P_CREAR_USUARIO(P_USUARIO VARCHAR2, P_CLAVE VARCHAR2, P_CAT NUMBER);
+     
+     
+     
+     
+     
       procedure P_EmpleadoDelAno ;
     END PK_EMPLEADOS;
 /
@@ -351,30 +373,76 @@ create or replace PACKAGE BODY PK_EMPLEADOS AS
       P_USUARIO VARCHAR2, CLAVE VARCHAR2) AS
       
       SENTENCIA VARCHAR2(500);
-      
       rol varchar2(100);
+      
   BEGIN
     -- TAREA: Se necesita implantación para PROCEDURE PK_EMPLEADOS.P_ALTA
     INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
       P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
-    SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
-    DBMS_OUTPUT.PUT_LINE (SENTENCIA);
-    EXECUTE IMMEDIATE SENTENCIA;
     
-    select nombre_cargo into rol from cat_empleado where id=p_cat_empleado;
-    
-    IF rol = 'Director' THEN
-            SENTENCIA := 'GRANT CONNECT, R_DIRECTOR TO ' || P_USUARIO;
-            EXECUTE IMMEDIATE SENTENCIA;
-    IF ELSE
-
-        
-    
-    SENTENCIA := 'GRANT CONNECT, R_' || P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
-    EXECUTE IMMEDIATE SENTENCIA;
+    IF P_USUARIO <> NULL THEN
+        SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
+        DBMS_OUTPUT.PUT_LINE (SENTENCIA);
+        EXECUTE IMMEDIATE SENTENCIA;
+  
+        select upper(nombre_cargo) into rol from cat_empleado where id=p_cat_empleado;
+        IF rol = 'DIRECTOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_DIRECTOR TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+        ELSIF ROL = 'SUPERVISOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_SUPERVISOR TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+        ELSIF ROL = 'CAJERO-REPONEDOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_CAJERO TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+        END IF;
+   END IF;
   END P_ALTA;
   
-  -- 1.Habrá un procedimiento P_EmpleadoDelAño que aumentará el sueldo bruto en un 10%) al empleado más eficiente en caja (que ha emitido un mayor número de tickets).
+  
+PROCEDURE P_BAJA (P_DNI VARCHAR2) AS
+    v_usuario varchar(100);
+    sentencia varchar(500);
+    BEGIN
+        select usuario into v_usuario from empleado where upper(dni) like upper(P_DNI);
+        IF v_usuario <> NULL THEN
+            sentencia:='drop user ' || v_usuario;
+            EXECUTE IMMEDIATE SENTENCIA;
+        end if;
+        
+        DELETE FROM CLIENTE WHERE upper(DNI) LIKE UPPER(P_DNI);
+        
+    END P_BAJA;
+    
+PROCEDURE P_BLOQ_CUENTA(P_USUARIO VARCHAR2) as
+    sentencia varchar(500);
+    rol varchar2(100);
+    categ number;
+    BEGIN
+    select cat_empleado into categ from empleado where upper(usuario) like upper(P_USUARIO);
+    select upper(nombre_cargo) into rol from cat_empleado where id=categ;
+    
+    if rol <> 'DIRECTOR' then
+        sentencia:='ALTER USER ' || P_USUARIO || ' ACCOUNT LOCK';
+    end if;
+    
+    END P_BLOQ_CUENTA;
+  
+PROCEDURE P_DESBLOQ_CUENTA(P_USUARIO VARCHAR2) as
+    sentencia varchar(500);
+    rol varchar2(100);
+    categ number;
+    BEGIN
+    select cat_empleado into categ from empleado where upper(usuario) like upper(P_USUARIO);
+    select upper(nombre_cargo) into rol from cat_empleado where id=categ;
+    
+    if rol <> 'DIRECTOR' then
+        sentencia:='ALTER USER ' || P_USUARIO || ' ACCOUNT UNLOCK';
+    end if;
+    
+    END P_DESBLOQ_CUENTA;
+  
+  
   procedure P_EmpleadoDelAno as
   id_empleado number;
   begin
