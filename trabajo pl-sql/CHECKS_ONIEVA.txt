@@ -1,0 +1,95 @@
+1. (5p) --HECHO
+?Se ha añadido un esquema distinto para el trabajo? --Sí
+?Se han creado índices? ?Cuáles? ?Por qué? --Sí
+------
+Se creó el esquema del usuario Mercoracle tal y como se pidió en una prática, esquema en el cual se crearon todos los procedimientos, vistas, disparadores, trabajos y demás objetos. Aparte de este esquema, no se ha creado ninguno más.
+Respecto a los índices, se han creado los siguientes: (además de los importados del script generado del Olimpia)
+-Por el nombre del cargo en la categoría del empleado.
+-Por el código postal en los clientes y en los empleados.
+-Por el cliente en la entrega.
+-Por el pasillo asignado en el mobiliario.
+-Por el tipo de oferta en la oferta.
+-Por la categoria del producto en el producto.
+-Por el nombre de retención en la retención.
+-Por la fecha de pedido y el número de cliente fidelizado en el ticket.
+El motivo principal de estos atributos es que al no ser modificados habitualmente, los índices son más eficientes.
+Además, agilizarán las consultas al estar los índices sobre atributos cuyos valores suelen estar acotados. Por ejemplo, el código postal español tiene 11.752 códigos postales, ni uno más ni uno menos.
+
+
+2. (5p) --
+?Se han programado los procedimientos PL/SQL pedidos? --Sí
+?Paquetes solicitados con todos sus procedimientos/funciones? --Sí
+?Se controlan los privilegios de ejecución de estos procedimientos? --
+------
+Se han programado el procedimiento P_REVISA y los paquetes PK_ANALISIS, PK_PUNTOS y PK_EMPLEADOS.
+Dentro de cada uno de los paquetes van los procedimientos y funciones pedidos en el enunciado, cada uno ha sido probado con diferentes valores de entrada para asegurarse que no produce errores.
+
+
+
+3. (3p) --
+?Es el diseño (modelo E/R) de la base de datos correcto? --Sí
+?Se comprueban restricciones semánticas? Números no negativos para ciertos campos, rango de valores, etc. (e.g. precio de los productos, puntos de la tarjeta) --Sí
+?Se comprueba el formato de campos? Por ejemplo, email debe contener '@', etc. --Sí
+?Se ha utilizado secuencias o alguna otra opción similar para los identificadores autogenerados? (e.g. facturas, números de tarjeta de fidelización, etc). --
+?Se han creado Restricciones NOT NULL? --Sí
+------
+El diseño de la base de datos que tenemos en la máquina virtual no es exactamente el mismo que el diseño del modelo entidad-relación, hay cosas que han sido modificadas. Por ejemplo, en el ER tenemos que la retención va unido con la nómina y con la categoría del empleado, sin embargo en la base de datos, la retención solo está unida con la categoria del empleado. Otro elemento distinto puede ser que la entidas Linea de pedido se llama Detalle en la base de datos, a pesar de que tanto la tabla como la entidad tienen los mismos atributos. Además, la tabla IVA tiene dos atributos (tipo iva y descripción) más que la entidad del mismo nombre del ER.
+Se comprueba que las fechas de finalización de las ofertas nunca sean igual o superior al día de creación, pero nunca anterior. 
+Se comprueba que los porcentajes del IVA y las retenciones tengan un valor entre 0 y 100. 
+También se comprueba que los precios, los puntos, el stock, la exposición, los número de tarjetas y demás elemento que no pueden ser negativos sean siempre positivos, los puntos se inicializan a cero.
+Asímismo, se comprueba que el campo email de los empleados, clientes fidelizados y proveedores contengan el caracter @. 
+No se ha creado ninguna restricción NOT NULL adicional aparte de las ya autogeneradas al ejecutar el script del Olimpia puesto que no hemos considerado que fuese necesario.
+
+
+4. (5p) --
+?Se han creado las vistas necesarias? --
+?V_REVISION_HOY.  Con los datos de REVISION correspondientes al día en el que se consulta? --Sí
+?Otras vistas? --
+------
+Se han creado las vistas V_REVISION_HOY y V_IVA_TRIMESTRE tal y como se pedía en el enunciado. 
+Además de estas se han creado las siguientes vistas:
+-V_PRODUCTOS (Información [CB, Producto, Precio, IVA y Categoría] de todos los productos)
+-V_PRODUCTOS_OFERTA (Información [CB, Producto, Precio, IVA, Categoría y Tipo de oferta] de todos los productos en oferta)
+
+
+5. (5p) --HECHO
+?Se han programado los triggers pedidos? --Sí
+?Trigger de control de unidades de productos en exposición? --Sí
+?Trigger de eliminación de clientes fidelizados? --Sí
+------
+Ambos disparadores han sido creados y probados introduciendo y borrando datos para asegurarse de que funcionan correctamente y no hay problemas con las claves ajenas.
+
+6. (5p) --HECHO
+?Se han programado los jobs pedidos? --Sí
+?Job para ejecución del procedimiento P_REVISA? --Sí
+?Job para la reasignación de metros lineales? --Sí
+------
+Se han creado ambos trabajos y se ha probado el correcto funcionamiento de estos cambiando la fecha de la máquina virtual para ver que se ejecutaban a la hora especificada y que el valor de salida al ejecutar el trabajo era SUCCESS.
+
+7. (10p) --
+Seguridad
+?Se han creado los roles adecuadamente? --
+?Se han asignado los usuarios a los roles adecuadamente? --Sí
+?Se han asignado los permisos de forma restrictiva a todos los usuarios. Ejemplos (que dependen de los roles creados): --
+?Operaciones a realizar por los cajeros. Acceso únicamente a los datos necesarios para la realización de su trabajo? 
+E.g. no debería poder acceder a los datos de los proveedores, ya que no son ellos quien realizarían los pedidos --
+?Operaciones a realizar por los clientes fidelizados. Acceso únicamente a algunas vistas de los productos. --
+?Solo los directores deberían de tener información relativa a las nóminas. --
+
+?Hay profiles en la creación de usuarios de la BD? --
+?Alguna política de gestión de contraseñas? --
+En el proceso de creación de usuarios, ?se le asigna correctamente los roles? Y el TableSpace? --
+?Hay un usuario para la ejecución de jobs?. P.e. Planificador --
+?Se han aplicado las tecnologías vistas en clase/prácticas para el filtrado de datos con políticas? --
+TDE (Transparent Data Encryption) para las tablas/columnas sensibles. ?Cuáles? --
+Políticas de autorización mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sólo tendrá disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA (privilegio de administración). --
+------
+Se han creado los roles R_DIRECTOR, R_SUPERVISOR, R_CAJERO tal y como se piden en el ejercicio uno. Además de haberse añadido
+
+
+
+8. (2p) --
+Recuperabilidad. ?Se están auditando las operaciones importantes? --
+?Se ha configurado la auditoría para la modificación de empleados, clientes y nóminas? --
+?Se ha configurado la auditoría para la modificación de políticas de seguridad como las configuradas con VPD o TDE? --
+------
