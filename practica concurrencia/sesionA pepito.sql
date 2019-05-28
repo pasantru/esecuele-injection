@@ -1,3 +1,12 @@
+/*
+-- En system
+create tablespace ts_pepito datafile 'pepito.dbf' size 20M autoextend on next 2M;
+
+create user pepito identified by bd default tablespace ts_pepito quota unlimited on ts_pepito;
+
+grant connect, resource to pepito;
+*/
+
 --En la sesión "A":
 --Creamos la tabla cuenta
 CREATE TABLE CUENTA (numero number primary key, saldo number);
@@ -121,3 +130,12 @@ Realiza una copia de seguridad con la utilidad externa Data Pump Export (expdp) 
 NOTA: El usuario no debe tener privilegios para un export total de la base de datos. 
 Recuerda que deberás crear un objeto directorio de ORACLE antes de poder realizar la exportación y que el usuario deberá tener permisos de lectura y escritura sobre el mismo.
 
+/*
+-- como system
+CREATE DIRECTORY  exp_pepito  AS  'C:\Users\alumnos\Oracle\PracticaConcurrenciaPepito';
+GRANT read, write ON DIRECTORY  exp_pepito  TO  pepito;
+GRANT DATAPUMP_EXP_FULL_DATABASE TO pepito;
+
+-- Ejecutar esto en el cmd:
+-- expdp pepito/pepito@ORCL  DIRECTORY = exp_pepito  DUMPFILE =exp_schm_pepito.dmp  LOGFILE=pepito_lg.log SCHEMAS = pepito
+*/
