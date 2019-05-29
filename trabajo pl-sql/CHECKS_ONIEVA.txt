@@ -91,21 +91,22 @@ Seguridad
 ¿Alguna política de gestión de contraseñas? --
 En el proceso de creación de usuarios, ¿se le asigna correctamente los roles? Y el TableSpace? --
 ¿Hay un usuario para la ejecución de jobs?. P.e. Planificador --
-¿Se han aplicado las tecnologías vistas en clase/prácticas para el filtrado de datos con políticas? --
-	TDE (Transparent Data Encryption) para las tablas/columnas sensibles. ¿Cuáles? -- Sí
-	Políticas de autorización mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sólo tendrá disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA 	(privilegio de administración). --
+¿Se han aplicado las tecnologías vistas en clase/prácticas para el filtrado de datos con políticas? --Sí
+	TDE (Transparent Data Encryption) para las tablas/columnas sensibles. ¿Cuáles? --Sí
+	Políticas de autorización mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sólo tendrá disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA (privilegio de administración). --Sí
 ------
 Se han creado los roles R_DIRECTOR, R_SUPERVISOR, R_CAJERO tal y como se piden en el ejercicio uno. Además de haberse añadido, se les han asignado los permisos correspondientes.
 A la hora de crearse los usuarios en el procedimiento P_Alta, se les asigna el rol según su categoría de empleado, que puede ser Director, Supervisor y Cajero.
 El Director puede ver información de los empleados (reponedores y supervisores), clientes y proveedores. El supervisor puede ver reponedores, supervisores y los productos que están o no de oferta. Por último el cajero, solo puede ver los productos de oferta o normales y el correo del resto de empleados para comunicarse conm ellos.
-Se han cifrado los atributos sensibles de las tablas Cliente, Empleado, Fidelizado y Nómina
+Se han cifrado los atributos sensibles de las tablas Cliente, Empleado, Fidelizado y Nómina.
+No hemos utilizado la VPD 
 
 
 
 8. (2p) --HECHO
-Recuperabilidad. ¿Se están auditando las operaciones importantes? --
-¿Se ha configurado la auditoría para la modificación de empleados, clientes y nóminas? --
-¿Se ha configurado la auditoría para la modificación de políticas de seguridad como las configuradas con VPD o TDE? --
+Recuperabilidad. ¿Se están auditando las operaciones importantes? --Sí
+¿Se ha configurado la auditoría para la modificación de empleados, clientes y nóminas? --Sí
+¿Se ha configurado la auditoría para la modificación de políticas de seguridad como las configuradas con VPD o TDE? --Sí
 ------
-Se auditan las operaciones Insert, Update y Delete sobre las tablas Cliente, Fidelizado, Empleado y Nómina por acceso.
-Para auditoría de la modificación del TDE auditamos los comandos Alter System por acceso.
+Se auditan las operaciones Insert, Update y Delete sobre las tablas Cliente, Fidelizado, Empleado y Nómina por acceso de usuario.
+Para auditoría de la modificación del TDE auditamos los comandos Alter System por acceso de usuario.
