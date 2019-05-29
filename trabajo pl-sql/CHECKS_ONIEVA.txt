@@ -3,107 +3,109 @@ https://www.arungudelli.com/tutorial/oracle/auto-increment-identity-column-in-or
 
 
 1. (5p) --HECHO
-¿Se ha añadido un esquema distinto para el trabajo? --Sí
-¿Se han creado índices? ¿Cuáles? ¿Por qué? --Sí
+Â¿Se ha aÃ±adido un esquema distinto para el trabajo? --SÃ­
+Â¿Se han creado Ã­ndices? Â¿CuÃ¡les? Â¿Por quÃ©? --SÃ­
 ------
-Se creó el esquema del usuario Mercoracle tal y como se pidió en una prática, esquema en el cual se crearon todos los procedimientos, vistas, disparadores, trabajos y demás objetos. Aparte de este esquema, no se ha creado ninguno más.
-Respecto a los índices, se han creado los siguientes: (además de los importados del script generado del Olimpia)
--Por el nombre del cargo en la categoría del empleado.
--Por el código postal en los clientes y en los empleados.
+Se creÃ³ el esquema del usuario Mercoracle tal y como se pidiÃ³ en una prÃ¡tica, esquema en el cual se crearon todos los procedimientos, vistas, disparadores, trabajos y demÃ¡s objetos. Aparte de este esquema, no se ha creado ninguno mÃ¡s.
+Respecto a los Ã­ndices, se han creado los siguientes: (ademÃ¡s de los importados del script generado del Olimpia)
+-Por el nombre del cargo en la categorÃ­a del empleado.
+-Por el cÃ³digo postal en los clientes y en los empleados.
 -Por el cliente en la entrega.
 -Por el pasillo asignado en el mobiliario.
 -Por el tipo de oferta en la oferta.
 -Por la categoria del producto en el producto.
--Por el nombre de retención en la retención.
--Por la fecha de pedido y el número de cliente fidelizado en el ticket.
-El motivo principal de estos atributos es que al no ser modificados habitualmente, los índices son más eficientes.
-Además, agilizarán las consultas al estar los índices sobre atributos cuyos valores suelen estar acotados. Por ejemplo, el código postal español tiene 11.752 códigos postales, ni uno más ni uno menos.
+-Por el nombre de retenciÃ³n en la retenciÃ³n.
+-Por la fecha de pedido y el nÃºmero de cliente fidelizado en el ticket.
+El motivo principal de estos atributos es que al no ser modificados habitualmente, los Ã­ndices son mÃ¡s eficientes.
+AdemÃ¡s, agilizarÃ¡n las consultas al estar los Ã­ndices sobre atributos cuyos valores suelen estar acotados. Por ejemplo, el cÃ³digo postal espaÃ±ol tiene 11.752 cÃ³digos postales, ni uno mÃ¡s ni uno menos.
 
 2. (5p) --HECHO
-¿Se han programado los procedimientos PL/SQL pedidos? --Sí
-¿Paquetes solicitados con todos sus procedimientos/funciones? --Sí
-¿Se controlan los privilegios de ejecución de estos procedimientos? --Sí
+Â¿Se han programado los procedimientos PL/SQL pedidos? --SÃ­
+Â¿Paquetes solicitados con todos sus procedimientos/funciones? --SÃ­
+Â¿Se controlan los privilegios de ejecuciÃ³n de estos procedimientos? --SÃ­
 ------
 Se han programado el procedimiento P_REVISA y los paquetes PK_ANALISIS, PK_PUNTOS y PK_EMPLEADOS.
 Dentro de cada uno de los paquetes van los procedimientos y funciones pedidos en el enunciado, cada uno ha sido probado con diferentes valores de entrada para asegurarse que no produce errores.
-Asímismo, se le han otorgado los permisos correspondientes a los roles establecidos al principio de la práctica para ejecutar los distintos procedicimientos de Mercoracle.
-PK_Empleados para el R_Director y R_Supervisor, PK_Análisis para R_Supervisor y PK_Puntos para el Supervisor y Director. P_Revisa para R_Cajero.
+AsÃ­mismo, se le han otorgado los permisos correspondientes a los roles establecidos al principio de la prÃ¡ctica para ejecutar los distintos procedicimientos de Mercoracle.
+PK_Empleados para el R_Director y R_Supervisor, PK_AnÃ¡lisis para R_Supervisor y PK_Puntos para el Supervisor y Director. P_Revisa para R_Cajero.
 
 3. (3p) --HECHO
-¿Es el diseño (modelo E/R) de la base de datos correcto? --Sí
-¿Se comprueban restricciones semánticas? Números no negativos para ciertos campos, rango de valores, etc. (e.g. precio de los productos, puntos de la tarjeta) --Sí
-¿Se comprueba el formato de campos? Por ejemplo, email debe contener '@', etc. --Sí
-¿Se ha utilizado secuencias o alguna otra opción similar para los identificadores autogenerados? (e.g. facturas, números de tarjeta de fidelización, etc). --Sí
-¿Se han creado Restricciones NOT NULL? --Sí
+Â¿Es el diseÃ±o (modelo E/R) de la base de datos correcto? --SÃ­
+Â¿Se comprueban restricciones semÃ¡nticas? NÃºmeros no negativos para ciertos campos, rango de valores, etc. (e.g. precio de los productos, puntos de la tarjeta) --SÃ­
+Â¿Se comprueba el formato de campos? Por ejemplo, email debe contener '@', etc. --SÃ­
+Â¿Se ha utilizado secuencias o alguna otra opciÃ³n similar para los identificadores autogenerados? (e.g. facturas, nÃºmeros de tarjeta de fidelizaciÃ³n, etc). --SÃ­
+Â¿Se han creado Restricciones NOT NULL? --SÃ­
 ------
-El diseño de la base de datos que tenemos en la máquina virtual no es exactamente el mismo que el diseño del modelo entidad-relación, hay cosas que han sido modificadas. Por ejemplo, en el ER tenemos que la retención va unido con la nómina y con la categoría del empleado, sin embargo en la base de datos, la retención solo está unida con la categoria del empleado. Otro elemento distinto puede ser que la entidas Linea de pedido se llama Detalle en la base de datos, a pesar de que tanto la tabla como la entidad tienen los mismos atributos. Además, la tabla IVA tiene dos atributos (tipo iva y descripción) más que la entidad del mismo nombre del ER.
-Se comprueba que las fechas de finalización de las ofertas nunca sean igual o superior al día de creación, pero nunca anterior. 
+El diseÃ±o de la base de datos que tenemos en la mÃ¡quina virtual no es exactamente el mismo que el diseÃ±o del modelo entidad-relaciÃ³n, hay cosas que han sido modificadas. Por ejemplo, en el ER tenemos que la retenciÃ³n va unido con la nÃ³mina y con la categorÃ­a del empleado, sin embargo en la base de datos, la retenciÃ³n solo estÃ¡ unida con la categoria del empleado. Otro elemento distinto puede ser que la entidas Linea de pedido se llama Detalle en la base de datos, a pesar de que tanto la tabla como la entidad tienen los mismos atributos. AdemÃ¡s, la tabla IVA tiene dos atributos (tipo iva y descripciÃ³n) mÃ¡s que la entidad del mismo nombre del ER.
+Se comprueba que las fechas de finalizaciÃ³n de las ofertas nunca sean igual o superior al dÃ­a de creaciÃ³n, pero nunca anterior. 
 Se comprueba que los porcentajes del IVA y las retenciones tengan un valor entre 0 y 100. 
-También se comprueba que los precios, los puntos, el stock, la exposición, los número de tarjetas y demás elemento que no pueden ser negativos sean siempre positivos, los puntos se inicializan a cero.
-Asímismo, se comprueba que el campo email de los empleados, clientes fidelizados y proveedores contengan el caracter @. 
-En el procedimiento P_ALTA de los empleados, introdujimos una estructura que asigna automáticamente el siguiente número de empleado en caso de que no se le pase por argumento ningún ID.
-No se ha creado ninguna restricción NOT NULL adicional aparte de las ya autogeneradas al ejecutar el script del Olimpia puesto que no hemos considerado que fuese necesario.
+TambiÃ©n se comprueba que los precios, los puntos, el stock, la exposiciÃ³n, los nÃºmero de tarjetas y demÃ¡s elemento que no pueden ser negativos sean siempre positivos, los puntos se inicializan a cero.
+AsÃ­mismo, se comprueba que el campo email de los empleados, clientes fidelizados y proveedores contengan el caracter @. 
+En el procedimiento P_ALTA de los empleados, introdujimos una estructura que asigna automÃ¡ticamente el siguiente nÃºmero de empleado en caso de que no se le pase por argumento ningÃºn ID.
+No se ha creado ninguna restricciÃ³n NOT NULL adicional aparte de las ya autogeneradas al ejecutar el script del Olimpia puesto que no hemos considerado que fuese necesario.
 
 
 4. (5p) --HECHO
-¿Se han creado las vistas necesarias? --Sí
-¿V_REVISION_HOY.  Con los datos de REVISION correspondientes al día en el que se consulta? --Sí
-¿Otras vistas? --Sí
+Â¿Se han creado las vistas necesarias? --SÃ­
+Â¿V_REVISION_HOY.  Con los datos de REVISION correspondientes al dÃ­a en el que se consulta? --SÃ­
+Â¿Otras vistas? --SÃ­
 ------
-Se han creado las vistas V_REVISION_HOY y V_IVA_TRIMESTRE tal y como se pedía en el enunciado. 
-Además de estas se han creado las siguientes vistas:
--V_PRODUCTOS (Información [CB, Producto, Precio, IVA y Categoría] de todos los productos)
--V_PRODUCTOS_OFERTA (Información [CB, Producto, Precio, IVA, Categoría y Tipo de oferta] de todos los productos en oferta)
--V_PROVEEDOR_PRODUCTOS (Información [CB, Producto, Proveedor, Responsable y y teléfono] de los proveedores de los productos)
--V_REPONJEDORES (Información [Empleado, Pasillo y Cargo] de los empleados que tienen asignado reponer un pasillo)
--V_SUPERVISORES (Información [Empleado, Equipo] de los empleados que supervisan algún equipo)
--V_EMPLEADOS (Información [Empleado, Número empleado y cargo] de todos los empleados de Mercoracle)
--V_CLIENTES_FIDELIZADOS (Información [Nombre cliente, Número cliente, Tarjeta y Puntos] de los clientes fidelizados)
--V_CORREO_EMPELADOS (Información [Empleado, Correo] acerca del correo de los empleados de Mercoracle para contactar con ellos)
+Se han creado las vistas V_REVISION_HOY y V_IVA_TRIMESTRE tal y como se pedÃ­a en el enunciado. 
+AdemÃ¡s de estas se han creado las siguientes vistas:
+-V_PRODUCTOS (InformaciÃ³n [CB, Producto, Precio, IVA y CategorÃ­a] de todos los productos)
+-V_PRODUCTOS_OFERTA (InformaciÃ³n [CB, Producto, Precio, IVA, CategorÃ­a y Tipo de oferta] de todos los productos en oferta)
+-V_PROVEEDOR_PRODUCTOS (InformaciÃ³n [CB, Producto, Proveedor, Responsable y y telÃ©fono] de los proveedores de los productos)
+-V_REPONJEDORES (InformaciÃ³n [Empleado, Pasillo y Cargo] de los empleados que tienen asignado reponer un pasillo)
+-V_SUPERVISORES (InformaciÃ³n [Empleado, Equipo] de los empleados que supervisan algÃºn equipo)
+-V_EMPLEADOS (InformaciÃ³n [Empleado, NÃºmero empleado y cargo] de todos los empleados de Mercoracle)
+-V_CLIENTES_FIDELIZADOS (InformaciÃ³n [Nombre cliente, NÃºmero cliente, Tarjeta y Puntos] de los clientes fidelizados)
+-V_CORREO_EMPELADOS (InformaciÃ³n [Empleado, Correo] acerca del correo de los empleados de Mercoracle para contactar con ellos)
 
 
 
 5. (5p) --HECHO
-¿Se han programado los triggers pedidos? --Sí
-¿Trigger de control de unidades de productos en exposición? --Sí
-¿Trigger de eliminación de clientes fidelizados? --Sí
+Â¿Se han programado los triggers pedidos? --SÃ­
+Â¿Trigger de control de unidades de productos en exposiciÃ³n? --SÃ­
+Â¿Trigger de eliminaciÃ³n de clientes fidelizados? --SÃ­
 ------
 Ambos disparadores han sido creados y probados introduciendo y borrando datos para asegurarse de que funcionan correctamente y no hay problemas con las claves ajenas.
 
 6. (5p) --HECHO
-¿Se han programado los jobs pedidos? --Sí
-¿Job para ejecución del procedimiento P_REVISA? --Sí
-¿Job para la reasignación de metros lineales? --Sí
+Â¿Se han programado los jobs pedidos? --SÃ­
+Â¿Job para ejecuciÃ³n del procedimiento P_REVISA? --SÃ­
+Â¿Job para la reasignaciÃ³n de metros lineales? --SÃ­
 ------
-Se han creado ambos trabajos y se ha probado el correcto funcionamiento de estos cambiando la fecha de la máquina virtual para ver que se ejecutaban a la hora especificada y que el valor de salida al ejecutar el trabajo era SUCCESS.
+Se han creado ambos trabajos y se ha probado el correcto funcionamiento de estos cambiando la fecha de la mÃ¡quina virtual para ver que se ejecutaban a la hora especificada y que el valor de salida al ejecutar el trabajo era SUCCESS.
 
 7. (10p) --
 Seguridad
-¿Se han creado los roles adecuadamente? --Sí
-¿Se han asignado los usuarios a los roles adecuadamente? --Sí
-¿Se han asignado los permisos de forma restrictiva a todos los usuarios. Ejemplos (que dependen de los roles creados): --Sí
-	¿Operaciones a realizar por los cajeros. Acceso únicamente a los datos necesarios para la realización de su trabajo? 
-	E.g. no debería poder acceder a los datos de los proveedores, ya que no son ellos quien realizarían los pedidos
-	¿Operaciones a realizar por los clientes fidelizados. Acceso únicamente a algunas vistas de los productos.
-	¿Solo los directores deberían de tener información relativa a las nóminas.
+Â¿Se han creado los roles adecuadamente? --SÃ­
+Â¿Se han asignado los usuarios a los roles adecuadamente? --SÃ­
+Â¿Se han asignado los permisos de forma restrictiva a todos los usuarios. Ejemplos (que dependen de los roles creados): --SÃ­
+	Â¿Operaciones a realizar por los cajeros. Acceso Ãºnicamente a los datos necesarios para la realizaciÃ³n de su trabajo? 
+	E.g. no deberÃ­a poder acceder a los datos de los proveedores, ya que no son ellos quien realizarÃ­an los pedidos
+	Â¿Operaciones a realizar por los clientes fidelizados. Acceso Ãºnicamente a algunas vistas de los productos.
+	Â¿Solo los directores deberÃ­an de tener informaciÃ³n relativa a las nÃ³minas.
 
-¿Hay profiles en la creación de usuarios de la BD? --
-¿Alguna política de gestión de contraseñas? --
-En el proceso de creación de usuarios, ¿se le asigna correctamente los roles? Y el TableSpace? --
-¿Hay un usuario para la ejecución de jobs?. P.e. Planificador --
-¿Se han aplicado las tecnologías vistas en clase/prácticas para el filtrado de datos con políticas? --
-	TDE (Transparent Data Encryption) para las tablas/columnas sensibles. ¿Cuáles? -- Sí
-	Políticas de autorización mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sólo tendrá disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA 	(privilegio de administración). --
+Â¿Hay profiles en la creaciÃ³n de usuarios de la BD? --
+Â¿Alguna polÃ­tica de gestiÃ³n de contraseÃ±as? --
+En el proceso de creaciÃ³n de usuarios, Â¿se le asigna correctamente los roles? Y el TableSpace? --
+Â¿Hay un usuario para la ejecuciÃ³n de jobs?. P.e. Planificador --
+Â¿Se han aplicado las tecnologÃ­as vistas en clase/prÃ¡cticas para el filtrado de datos con polÃ­ticas? --
+	TDE (Transparent Data Encryption) para las tablas/columnas sensibles. Â¿CuÃ¡les? -- SÃ­
+	PolÃ­ticas de autorizaciÃ³n mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sÃ³lo tendrÃ¡ disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA 	(privilegio de administraciÃ³n). --
 ------
-Se han creado los roles R_DIRECTOR, R_SUPERVISOR, R_CAJERO tal y como se piden en el ejercicio uno. Además de haberse añadido, se les han asignado los permisos correspondientes.
-A la hora de crearse los usuarios en el procedimiento P_Alta, se les asigna el rol según su categoría de empleado, que puede ser Director, Supervisor y Cajero.
-El Director puede ver información de los empleados (reponedores y supervisores), clientes y proveedores. El supervisor puede ver reponedores, supervisores y los productos que están o no de oferta. Por último el cajero, solo puede ver los productos de oferta o normales y el correo del resto de empleados para comunicarse conm ellos.
-Se han cifrado los atributos sensibles de las tablas Cliente, Empleado, Fidelizado y Nómina
+Se han creado los roles R_DIRECTOR, R_SUPERVISOR, R_CAJERO tal y como se piden en el ejercicio uno. AdemÃ¡s de haberse aÃ±adido, se les han asignado los permisos correspondientes.
+A la hora de crearse los usuarios en el procedimiento P_Alta, se les asigna el rol segÃºn su categorÃ­a de empleado, que puede ser Director, Supervisor y Cajero.
+El Director puede ver informaciÃ³n de los empleados (reponedores y supervisores), clientes y proveedores. El supervisor puede ver reponedores, supervisores y los productos que estÃ¡n o no de oferta. Por Ãºltimo el cajero, solo puede ver los productos de oferta o normales y el correo del resto de empleados para comunicarse conm ellos.
+Se han cifrado los atributos sensibles de las tablas Cliente, Empleado, Fidelizado y NÃ³mina
 
 
 
-8. (2p) --
-Recuperabilidad. ¿Se están auditando las operaciones importantes? --
-¿Se ha configurado la auditoría para la modificación de empleados, clientes y nóminas? --
-¿Se ha configurado la auditoría para la modificación de políticas de seguridad como las configuradas con VPD o TDE? --
+8. (2p) --HECHO
+Recuperabilidad. Â¿Se estÃ¡n auditando las operaciones importantes? --
+Â¿Se ha configurado la auditorÃ­a para la modificaciÃ³n de empleados, clientes y nÃ³minas? --
+Â¿Se ha configurado la auditorÃ­a para la modificaciÃ³n de polÃ­ticas de seguridad como las configuradas con VPD o TDE? --
 ------
+Se auditan las operaciones Insert, Update y Delete sobre las tablas Cliente, Fidelizado, Empleado y NÃ³mina por acceso.
+Para auditorÃ­a de la modificaciÃ³n del TDE auditamos los comandos Alter System por acceso.
