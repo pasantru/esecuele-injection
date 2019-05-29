@@ -375,13 +375,23 @@ create or replace PACKAGE BODY PK_EMPLEADOS AS
       SENTENCIA VARCHAR2(500);
       rol varchar2(100);
       
+      max_id number;
+      
   BEGIN
-    -- TAREA: Se necesita implantación para PROCEDURE PK_EMPLEADOS.P_ALTA
-    INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
-      P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
+    select max(id) into max_id from empleado;
     
-    IF P_USUARIO <> NULL THEN
-        SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE;
+    -- TAREA: Se necesita implantación para PROCEDURE PK_EMPLEADOS.P_ALTA
+    IF P_ID is not NULL THEN
+        INSERT INTO EMPLEADO VALUES (P_ID, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO, P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
+    ELSE
+        INSERT INTO EMPLEADO VALUES (max_id+1, P_DNI, P_NOMBRE, P_APELLIDO1, P_APELLIDO2, P_DOMICILIO,
+      P_CODIGO_POSTAL, P_TELEFONO, P_EMAIL, P_CAT_EMPLEADO, P_FECHA_ALTA, P_USUARIO);
+    END IF;
+    
+    IF P_USUARIO is not NULL THEN
+        SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || CLAVE || ' default tablespace TS_MERCORACLE
+quota UNLIMITED on TS_MERCORACLE
+profile perf_empleado';
         DBMS_OUTPUT.PUT_LINE (SENTENCIA);
         EXECUTE IMMEDIATE SENTENCIA;
   
@@ -389,8 +399,12 @@ create or replace PACKAGE BODY PK_EMPLEADOS AS
         IF rol = 'DIRECTOR' THEN
                 SENTENCIA := 'GRANT CONNECT, R_DIRECTOR TO ' || P_USUARIO;
                 EXECUTE IMMEDIATE SENTENCIA;
+                SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_ADMINISTRATIVO';
+                EXECUTE IMMEDIATE SENTENCIA;
         ELSIF ROL = 'SUPERVISOR' THEN
                 SENTENCIA := 'GRANT CONNECT, R_SUPERVISOR TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+                SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_ADMINISTRATIVO';
                 EXECUTE IMMEDIATE SENTENCIA;
         ELSIF ROL = 'CAJERO-REPONEDOR' THEN
                 SENTENCIA := 'GRANT CONNECT, R_CAJERO TO ' || P_USUARIO;
@@ -405,12 +419,12 @@ PROCEDURE P_BAJA (P_DNI VARCHAR2) AS
     sentencia varchar(500);
     BEGIN
         select usuario into v_usuario from empleado where upper(dni) like upper(P_DNI);
-        IF v_usuario <> NULL THEN
+        IF v_usuario is not NULL THEN
             sentencia:='drop user ' || v_usuario;
             EXECUTE IMMEDIATE SENTENCIA;
         end if;
         
-        DELETE FROM CLIENTE WHERE upper(DNI) LIKE UPPER(P_DNI);
+        DELETE FROM empleado WHERE upper(DNI) LIKE UPPER(P_DNI);
         
     END P_BAJA;
     
@@ -424,6 +438,7 @@ PROCEDURE P_BLOQ_CUENTA(P_USUARIO VARCHAR2) as
     
     if rol <> 'DIRECTOR' then
         sentencia:='ALTER USER ' || P_USUARIO || ' ACCOUNT LOCK';
+        execute immediate sentencia;
     end if;
     
     END P_BLOQ_CUENTA;
@@ -436,13 +451,177 @@ PROCEDURE P_DESBLOQ_CUENTA(P_USUARIO VARCHAR2) as
     select cat_empleado into categ from empleado where upper(usuario) like upper(P_USUARIO);
     select upper(nombre_cargo) into rol from cat_empleado where id=categ;
     
-    if rol <> 'DIRECTOR' then
+    
         sentencia:='ALTER USER ' || P_USUARIO || ' ACCOUNT UNLOCK';
-    end if;
+        execute immediate sentencia;
+    
     
     END P_DESBLOQ_CUENTA;
   
+PROCEDURE P_BLOQ_TODAS AS
+    cursor c_usuario is(
+        select usuario from empleado where usuario is not null
+    );
+    p_usuario varchar2(100);
+    
+    BEGIN
+        open c_usuario;
+        fetch c_usuario into p_usuario;
+        
+        while c_usuario%found loop
+            PK_EMPLEADOS.P_BLOQ_CUENTA(
+                P_USUARIO => P_USUARIO
+            );
+            fetch c_usuario into p_usuario;
+        end loop;
+    END P_BLOQ_TODAS;
+        
+PROCEDURE P_DESBLOQ_TODAS AS
+    cursor c_usuario is(
+        select usuario from empleado where usuario is not null
+    );
+    p_usuario varchar2(100);
+    
+    BEGIN
+        open c_usuario;
+        fetch c_usuario into p_usuario;
+        
+        while c_usuario%found loop
+            PK_EMPLEADOS.P_DESBLOQ_CUENTA(
+                P_USUARIO => P_USUARIO
+            );
+            fetch c_usuario into p_usuario;
+        end loop;
+            
+    END P_DESBLOQ_TODAS;
+    
+PROCEDURE P_MOD_DOMICILIO(P_DNI VARCHAR2, P_NUEVO_DOMICILIO VARCHAR2, P_NUEVO_CODIGO_POSTAL NUMBER) AS
+    V_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO V_EMPLEADO FROM EMPLEADO WHERE UPPER(DNI) LIKE UPPER(P_DNI);
+        
+        UPDATE EMPLEADO
+        SET DOMICILIO = P_NUEVO_DOMICILIO, CODIGO_POSTAL = P_NUEVO_CODIGO_POSTAL
+        WHERE ID = V_EMPLEADO;
+        commit;
+    END P_MOD_DOMICILIO;
+            
+             
+PROCEDURE P_MOD_CONTACTO(P_DNI VARCHAR2, P_NUEVO_TELEFONO VARCHAR2, P_NUEVO_EMAIL VARCHAR2) AS
+    V_EMPLEADO NUMBER;
+    BEGIN
+        SELECT ID INTO V_EMPLEADO FROM EMPLEADO WHERE UPPER(DNI) LIKE UPPER(P_DNI);
+        
+        UPDATE EMPLEADO
+        SET TELEFONO = P_NUEVO_TELEFONO, EMAIL = P_NUEVO_EMAIL
+        WHERE ID = V_EMPLEADO;
+        commit;
+    END P_MOD_CONTACTO;
+
+PROCEDURE P_MOD_CAT_EMPLEADO(P_DNI VARCHAR2, P_NUEVA_CAT NUMBER) AS
+    v_cat_antigua number;
+    rol varchar2(100);
+    sentencia varchar2(2000);
+    
+    P_USUARIO varchar2(100);
+    BEGIN
+        SELECT cat_empleado into v_cat_antigua FROM EMPLEADO WHERE UPPER(DNI) LIKE UPPER(P_DNI);
+        SELECT usuario into p_usuario FROM EMPLEADO WHERE UPPER(DNI) LIKE UPPER(P_DNI);
+        
+        UPDATE EMPLEADO
+        SET CAT_EMPLEADO = P_NUEVA_CAT
+        WHERE DNI = P_DNI;
+        commit;
+        
+        select upper(nombre_cargo) into rol from cat_empleado where id=v_cat_antigua;
+        
+        if P_USUARIO is not null then
+            
+            IF rol = 'DIRECTOR' THEN
+                    SENTENCIA := 'REVOKE R_DIRECTOR TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+                    SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_EMPLEADO';
+                    EXECUTE IMMEDIATE SENTENCIA;
+            ELSIF ROL = 'SUPERVISOR' THEN
+                    SENTENCIA := 'REVOKE R_SUPERVISOR TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+                    SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_EMPLEADO';
+                    EXECUTE IMMEDIATE SENTENCIA;
+            ELSIF ROL = 'CAJERO-REPONEDOR' THEN
+                   SENTENCIA := 'REVOKE R_CAJERO TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+            END IF;
+            
+            select upper(nombre_cargo) into rol from cat_empleado where id=P_NUEVA_CAT;
+            IF rol = 'DIRECTOR' THEN
+                    SENTENCIA := 'grant R_DIRECTOR TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+                    SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_ADMINISTRATIVO';
+                    EXECUTE IMMEDIATE SENTENCIA;
+            ELSIF ROL = 'SUPERVISOR' THEN
+                    SENTENCIA := 'grant R_SUPERVISOR TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+                    SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_administrativo';
+                    EXECUTE IMMEDIATE SENTENCIA;
+            ELSIF ROL = 'CAJERO-REPONEDOR' THEN
+                   SENTENCIA := 'grant R_CAJERO TO ' || P_USUARIO;
+                    EXECUTE IMMEDIATE SENTENCIA;
+            END IF;
+        end if;
+    END P_MOD_CAT_EMPLEADO;
+    
+    
+PROCEDURE P_CREAR_USUARIO(P_USUARIO VARCHAR2, P_CLAVE VARCHAR2, P_CAT NUMBER) AS
+    SENTENCIA VARCHAR2(500);
+    ROL VARCHAR(100);
+    BEGIN
+        SENTENCIA := 'CREATE USER ' ||P_USUARIO || ' IDENTIFIED BY ' || P_CLAVE || ' default tablespace TS_MERCORACLE
+quota unlimited on TS_MERCORACLE
+profile perf_empleado';
+        EXECUTE IMMEDIATE SENTENCIA;
   
+        select upper(nombre_cargo) into rol from cat_empleado where id=p_cat;
+        IF rol = 'DIRECTOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_DIRECTOR TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+                SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_ADMINISTRATIVO';
+                EXECUTE IMMEDIATE SENTENCIA;
+        ELSIF ROL = 'SUPERVISOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_SUPERVISOR TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+                SENTENCIA := 'ALTER USER ' || P_USUARIO || ' PROFILE PERF_ADMINISTRATIVO';
+                EXECUTE IMMEDIATE SENTENCIA;
+        ELSIF ROL = 'CAJERO-REPONEDOR' THEN
+                SENTENCIA := 'GRANT CONNECT, R_CAJERO TO ' || P_USUARIO;
+                EXECUTE IMMEDIATE SENTENCIA;
+        END IF;
+    END P_CREAR_USUARIO;
+
+
+
+PROCEDURE P_MOD_CLAVE(P_USUARIO VARCHAR2, P_NUEVA_CLAVE VARCHAR2) AS
+    SENTENCIA VARCHAR2(500);
+    BEGIN
+        SENTENCIA := 'ALTER USER ' || P_USUARIO || ' IDENTIFY BY ' || P_NUEVA_CLAVE;
+        EXECUTE IMMEDIATE SENTENCIA;
+    END P_MOD_CLAVE;
+
+
+PROCEDURE P_BORRAR_USUARIO(P_USUARIO VARCHAR2) AS
+    SENTENCIA VARCHAR2(500);
+    BEGIN
+        SENTENCIA := 'DROP USER ' || P_USUARIO;
+        EXECUTE IMMEDIATE SENTENCIA;
+        dbms_output.put_line(sentencia);
+        update empleado
+             set usuario = null
+            where upper(usuario) like upper(P_USUARIO);
+        commit;
+            
+       
+        
+    END P_BORRAR_USUARIO;
+
   procedure P_EmpleadoDelAno as
   id_empleado number;
   begin
@@ -451,6 +630,8 @@ PROCEDURE P_DESBLOQ_CUENTA(P_USUARIO VARCHAR2) as
             set IMPORTE_BRUTO = IMPORTE_BRUTO*1.10
             where empleado = id_empleado;
         commit;
+        
+        dbms_output.put_line(id_empleado);
     
   end P_EmpleadoDelAno;
   
