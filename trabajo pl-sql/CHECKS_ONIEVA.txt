@@ -77,7 +77,7 @@ Ambos disparadores han sido creados y probados introduciendo y borrando datos pa
 ------
 Se han creado ambos trabajos y se ha probado el correcto funcionamiento de estos cambiando la fecha de la máquina virtual para ver que se ejecutaban a la hora especificada y que el valor de salida al ejecutar el trabajo era SUCCESS.
 
-7. (10p) --
+7. (10p) --HECHO
 Seguridad
 ¿Se han creado los roles adecuadamente? --Sí
 ¿Se han asignado los usuarios a los roles adecuadamente? --Sí
@@ -87,10 +87,10 @@ Seguridad
 	¿Operaciones a realizar por los clientes fidelizados. Acceso únicamente a algunas vistas de los productos.
 	¿Solo los directores deberían de tener información relativa a las nóminas.
 
-¿Hay profiles en la creación de usuarios de la BD? --
-¿Alguna política de gestión de contraseñas? --
-En el proceso de creación de usuarios, ¿se le asigna correctamente los roles? Y el TableSpace? --
-¿Hay un usuario para la ejecución de jobs?. P.e. Planificador --
+¿Hay profiles en la creación de usuarios de la BD? --Sí
+¿Alguna política de gestión de contraseñas? --Sí
+En el proceso de creación de usuarios, ¿se le asigna correctamente los roles? Y el TableSpace? --Sí
+¿Hay un usuario para la ejecución de jobs?. P.e. Planificador --Sí
 ¿Se han aplicado las tecnologías vistas en clase/prácticas para el filtrado de datos con políticas? --Sí
 	TDE (Transparent Data Encryption) para las tablas/columnas sensibles. ¿Cuáles? --Sí
 	Políticas de autorización mediante VPD. E.g. controlar el acceso a los datos de los empleados. Cuando un usuario acceda sólo tendrá disponibles sus datos. Excepto si se trata de un usuario que haya accedido como SYSDBA (privilegio de administración). --Sí
@@ -98,8 +98,12 @@ En el proceso de creación de usuarios, ¿se le asigna correctamente los roles? 
 Se han creado los roles R_DIRECTOR, R_SUPERVISOR, R_CAJERO tal y como se piden en el ejercicio uno. Además de haberse añadido, se les han asignado los permisos correspondientes.
 A la hora de crearse los usuarios en el procedimiento P_Alta, se les asigna el rol según su categoría de empleado, que puede ser Director, Supervisor y Cajero.
 El Director puede ver información de los empleados (reponedores y supervisores), clientes y proveedores. El supervisor puede ver reponedores, supervisores y los productos que están o no de oferta. Por último el cajero, solo puede ver los productos de oferta o normales y el correo del resto de empleados para comunicarse conm ellos.
+En la base de datos hemos creado los perfiles Perf_empleado y Perf_administrativo, similares a los perfiles que se crearon en la práctica uno de seguridad.
+Los usuarios al ser creados, reciben un rol según su categoría. Asímismo, los usuarios son creados en el tablespace TS_MERCORACLE.
+Respecto a los trabajos, estos serán ejecutados desde MERCORACLE.
+No existe en sí una política de gestíon de contraseñas, solamente se ha configurado el administrador de claves para la Wallet_root del TDE.
 Se han cifrado los atributos sensibles de las tablas Cliente, Empleado, Fidelizado y Nómina.
-No hemos utilizado la VPD 
+No hemos utilizado la VPD puesto que no sabíamos dónde aplicarla y cómo aplicarla.
 
 
 
